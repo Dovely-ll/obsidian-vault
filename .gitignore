@@ -1,0 +1,25 @@
+# Obsidian
+.obsidian/plugins/
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/appearance.json
+.obsidian/community-plugins.json
+.obsidian/core-plugins-migration.json
+.obsidian/graph.json
+.obsidian/workspace-sync.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Cache
+.cache/

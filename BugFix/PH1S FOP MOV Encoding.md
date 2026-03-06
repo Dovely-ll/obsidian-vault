@@ -1,6 +1,6 @@
 # Debug Log
-Affected: mp_31 mp_32
-
+Affected: mp_31 mp_32  
+FOP.MOV.BST2
 # MR Locating
 20250901_master
   [N-wsD---]   FOP.MOV DST0_REG=AR2, SRC0_REG=SH258, SRC0_FMT=F16_E0, SRC2_REG=R0, SRC2_FMT=BF16_E0, BURST=BURST2, SRC2_INC=1

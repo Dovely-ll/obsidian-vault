@@ -5,7 +5,7 @@ FOP.MOV.BST2
 
 SMP引起寄存器分配变动，FOP.MOV.BST2未设置默认SRC0（采用DST0 encoding），进而导致编码进未被分配的寄存器编号
 
-
+TODO: 需要检查其他FOP指令的默认寄存器问题
 # MR Locating
 20250901_master
   [N-wsD---]   FOP.MOV DST0_REG=AR2, SRC0_REG=SH258, SRC0_FMT=F16_E0, SRC2_REG=R0, SRC2_FMT=BF16_E0, BURST=BURST2, SRC2_INC=1

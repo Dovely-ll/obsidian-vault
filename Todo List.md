@@ -1,5 +1,4 @@
 Test cases:
-- printf
 - initpreprocessor加`__MTGPU__`控制
 - atomic_load_nand能否使用
 - check LSU atomic store -> done

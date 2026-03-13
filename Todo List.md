@@ -13,8 +13,7 @@ ing:
 - SW-73146 devTech: mutlass launch kernel编译报错error in backend: Cannot select: 0x55e957fd50d0
     - LSU PREFETCH问题 → 待确认
     - 性能数据
- - 添加atomicAnd_block
- - 补充dsa场景测试用例
+ - 补充dsa场景测试用例 done
 	 - fop.mov.bst v2f32 to v2bf16
 
 

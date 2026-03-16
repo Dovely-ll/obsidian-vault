@@ -27,6 +27,7 @@ MATE_FORCE_JIT=1 TVM_FFI_MUSA_ARCH_LIST=3.1 python benchmarks/bench_flash_attn.p
 | 2026-03-16 | 18:02 | 41c0ba6 | #3 | ✅ Pass | False | True | 56 | 229376 | 64 | 4 | 80.15 | 306.73 | Reproduce run |
 | 2026-03-16 | 18:02 | 41c0ba6 | #3 | ✅ Pass | True | False | 56 | 229376 | 64 | 4 | 98.71 | 194.56 | Reproduce run |
 | 2026-03-16 | 18:02 | 41c0ba6 | #3 | ✅ Pass | False | False | 56 | 229376 | 64 | 4 | 82.03 | 313.93 | Reproduce run |
+| 2026-03-16 | 19:18 | d159785 | #4 | ❌ Crash | - | - | - | - | - | - | - | - | LLVM assert failure (bug NOT fixed) |
 
 ---
 
@@ -106,6 +107,29 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 ---
 
+### Run #4 - 2026-03-16 19:18 (New Commit - CRASH)
+
+**MTCC Commit:** `d159785fb2f691717cc3509d29e68e00ab56779c`  
+**MCC Version:** 5.1.0  
+**Status:** ❌ **CRASH** (same LLVM assert as Run #1)
+
+**Verification:** `mcc --version` before run:
+```
+clang version 14.0.0 (git@sh-code.mthreads.com:sw/mtcc.git d159785fb2f691717cc3509d29e68e00ab56779c)
+mcc version 5.1.0
+```
+
+**Error:**
+```
+RuntimeError: ninja exited with status 254
+clang-14: /root/code/mtcc/llvmsrc/llvm/lib/CodeGen/RegisterPressure.cpp:1255: 
+Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/underflow"' failed.
+```
+
+**Analysis:** The LLVM register pressure bug is **NOT fixed** in commit d159785. Same assertion failure as Run #1 (commit 3c5851dee). Cache clean workaround does NOT help on this commit.
+
+---
+
 ## MCC Version History
 
 **Verification:** Each entry below was verified by running `mcc --version` immediately before/after the benchmark run.
@@ -115,6 +139,7 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 | 2026-03-16 | 16:51 | 3c5851dee | #1 | 5.1.0 | ❌ Crash | LLVM assert in RegisterPressure.cpp (verified: `mcc --version` before run) |
 | 2026-03-16 | 17:27 | 41c0ba6 | #2 | 5.1.0 | ✅ Pass | Cache clean workaround works; 4 configs tested (verified: `mcc --version` after run) |
 | 2026-03-16 | 18:02 | 41c0ba6 | #3 | 5.1.0 | ✅ Pass | Reproduced Run #2; results stable (±0.03 GB/s, ±0.06 TFLOPS) (verified: `mcc --version` after run: 41c0ba6bf76dfc34c4b10621705aa3293a5a1e5d) |
+| 2026-03-16 | 19:18 | d159785 | #4 | 5.1.0 | ❌ Crash | Same LLVM assert as Run #1; bug NOT fixed (verified: `mcc --version` before run: d159785fb2f691717cc3509d29e68e00ab56779c) |
 
 ---
 
@@ -122,7 +147,12 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 ### LLVM Register Pressure Tracker Crash
 
-**Affected Commit:** `3c5851dee34cdf5523f556bab5dc7986278eb0bd` (and possibly nearby commits)
+**Affected Commits:** 
+- `3c5851dee34cdf5523f556bab5dc7986278eb0bd` ❌
+- `d159785fb2f691717cc3509d29e68e00ab56779c` ❌
+
+**Working Commits:**
+- `41c0ba6bf76dfc34c4b10621705aa3293a5a1e5d` ✅ (with cache clean workaround)
 
 **Symptom:** `Assertion '(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/underflow"' failed`
 
@@ -130,22 +160,22 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 **Trigger:** JIT compilation of flash attention metadata kernel
 
-**Workaround:** Clear TVM-FFI cache before running:
+**Workaround:** Clear TVM-FFI cache before running (only works on commit 41c0ba6):
 ```bash
 rm -rf ~/.cache/tvm-ffi
 MATE_FORCE_JIT=1 TVM_FFI_MUSA_ARCH_LIST=3.1 python benchmarks/bench_flash_attn.py
 ```
 
-**Status:** Workaround confirmed working on commit 41c0ba6 (2026-03-16). Results are reproducible across multiple runs.
+**Status:** Bug persists across multiple commits. Commit 41c0ba6 works with cache clean workaround, but d159785 (newer) still crashes.
 
 ---
 
 ## Next Steps
 
-- [ ] Report LLVM assert bug to MTCC team (commit 3c5851dee)
+- [ ] Report LLVM assert bug to MTCC team (commits 3c5851dee, d159785)
+- [ ] Ask MTCC team about commit 41c0ba6 - why does it work?
 - [ ] Continue benchmarking on new commits
-- [ ] Compare performance across commits
-- [ ] Track when the crash is fixed in MTCC
+- [ ] Track when the crash is properly fixed in MTCC
 
 ---
 

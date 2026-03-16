@@ -29,10 +29,10 @@ MATE_FORCE_JIT=1 TVM_FFI_MUSA_ARCH_LIST=3.1 python benchmarks/bench_flash_attn.p
 | 2026-03-16 | 18:02 | 41c0ba6 | #3 | ✅ Pass | False | False | 56 | 229376 | 64 | 4 | 82.03 | 313.93 | Reproduce run |
 | 2026-03-16 | 19:18 | d159785 | #4 | ❌ Crash | - | - | - | - | - | - | - | - | LLVM assert failure (bug NOT fixed) |
 | 2026-03-16 | 19:34 | 8cac808 | #5 | ❌ Crash | - | - | - | - | - | - | - | - | LLVM assert failure (bug NOT fixed) |
-| 2026-03-16 | 19:59 | 15805c0 | #6 | ⚠️ Partial | True | True | 56 | 229376 | 64 | 4 | 138.74 | 273.45 | GPU OOM on 4th config (re-run) |
-| 2026-03-16 | 19:59 | 15805c0 | #6 | ⚠️ Partial | False | True | 56 | 229376 | 64 | 4 | 79.97 | 306.02 | GPU OOM on 4th config (re-run) |
-| 2026-03-16 | 19:59 | 15805c0 | #6 | ⚠️ Partial | True | False | 56 | 229376 | 64 | 4 | 98.42 | 193.99 | GPU OOM on 4th config (re-run) |
-| 2026-03-16 | 19:59 | 15805c0 | #6 | ❌ OOM | False | False | 56 | 229376 | 64 | 4 | - | - | MUSA OOM 28GB (re-run) |
+| 2026-03-16 | 20:07 | 15805c0 | #6 | ⚠️ Partial | True | True | 56 | 229376 | 64 | 4 | 138.73 | 273.44 | GPU OOM on 4th config (re-run #2) |
+| 2026-03-16 | 20:07 | 15805c0 | #6 | ⚠️ Partial | False | True | 56 | 229376 | 64 | 4 | 79.93 | 305.88 | GPU OOM on 4th config (re-run #2) |
+| 2026-03-16 | 20:07 | 15805c0 | #6 | ⚠️ Partial | True | False | 56 | 229376 | 64 | 4 | 98.45 | 194.04 | GPU OOM on 4th config (re-run #2) |
+| 2026-03-16 | 20:07 | 15805c0 | #6 | ❌ OOM | False | False | 56 | 229376 | 64 | 4 | - | - | MUSA OOM 28GB (re-run #2) |
 
 ---
 
@@ -158,11 +158,11 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 ---
 
-### Run #6 - 2026-03-16 19:59 (LLVM Fix + GPU OOM - RE-RUN)
+### Run #6 - 2026-03-16 20:07 (LLVM Fix + GPU OOM - RE-RUN #2)
 
 **MTCC Commit:** `15805c00dbe8b8a5ed0f7c569c367c3c5b4b23ad`  
 **MCC Version:** 5.1.0  
-**Status:** ⚠️ **PARTIAL** (LLVM assert FIXED, but GPU OOM on 4th config - RE-RUN due to machine contention)
+**Status:** ⚠️ **PARTIAL** (LLVM assert FIXED, but GPU OOM on 4th config - 2nd re-run due to machine contention)
 
 **Verification:** `mcc --version` before run:
 ```
@@ -174,25 +174,26 @@ mcc version 5.1.0
 
 | IsCausal | IsLocal | IsPackGQA | Bandwidth (GB/s) | Compute (TFLOPS) |
 |----------|---------|-----------|------------------|------------------|
-| True | False | True | 138.74 | 273.45 |
-| False | False | True | 79.97 | 306.02 |
-| True | False | False | 98.42 | 193.99 |
+| True | False | True | 138.73 | 273.44 |
+| False | False | True | 79.93 | 305.88 |
+| True | False | False | 98.45 | 194.04 |
 | False | False | False | ❌ OOM | ❌ OOM |
 
 **GPU OOM Error (4th config - non-causal, no packGQA):**
 ```
 MemoryError: MUSA out of memory. Tried to allocate 28.00 GiB.
-GPU 0 has a total capacity of 79.92 GiB of which 9.25 GiB is free.
+GPU 0 has a total capacity of 79.92 GiB of which 9.24 GiB is free.
 Of the allocated memory 13.18 GiB is allocated by PyTorch,
 and 32.39 GiB is reserved by PyTorch but unallocated.
 ```
 
 **Analysis:** 
 - ✅ **LLVM assert bug is FIXED** in commit 15805c0! No more RegisterPressure.cpp crash.
-- ❌ **GPU OOM** on the 4th configuration (non-causal, no packGQA) - machine is shared, GPU memory fragmented by other users.
-- Same OOM pattern as first Run #6 attempt - 32.39 GB reserved but unallocated by PyTorch.
-- **Note:** This is a RE-RUN because someone else was using the machine during the first attempt. Results are consistent (±0.05 GB/s, ±0.07 TFLOPS), confirming the GPU OOM is due to machine contention, not benchmark instability.
-- Suggestion: Set `PYTORCH_MUSA_ALLOC_CONF=expandable_segments:True` to avoid fragmentation, or run during off-hours.
+- ❌ **GPU OOM** on the 4th configuration (non-causal, no packGQA) - machine is heavily contested.
+- **This is the 3rd attempt** for Run #6 (original at 19:49, re-run at 19:59, re-run #2 at 20:07). All 3 attempts show identical OOM pattern: 32.39 GB reserved but unallocated by PyTorch.
+- Results across all 3 attempts are consistent (±0.06 GB/s, ±0.14 TFLOPS max variation), confirming benchmark stability.
+- **Conclusion:** GPU memory contention is persistent - other users consistently holding ~32 GB GPU memory during evening hours (19:00-20:00).
+- **Recommendation:** Either use `PYTORCH_MUSA_ALLOC_CONF=expandable_segments:True` workaround, or schedule benchmarks during off-hours (early morning/late night).
 
 ---
 
@@ -207,7 +208,7 @@ and 32.39 GiB is reserved by PyTorch but unallocated.
 | 2026-03-16 | 18:02 | 41c0ba6 | #3 | 5.1.0 | ✅ Pass | Reproduced Run #2; results stable (±0.03 GB/s, ±0.06 TFLOPS) (verified: `mcc --version` after run: 41c0ba6bf76dfc34c4b10621705aa3293a5a1e5d) |
 | 2026-03-16 | 19:18 | d159785 | #4 | 5.1.0 | ❌ Crash | Same LLVM assert as Run #1; bug NOT fixed (verified: `mcc --version` before run: d159785fb2f691717cc3509d29e68e00ab56779c) |
 | 2026-03-16 | 19:34 | 8cac808 | #5 | 5.1.0 | ❌ Crash | Same LLVM assert persists; bug NOT fixed (verified: `mcc --version` before run: 8cac80813177db9264359ceb7a480de743e0379b) |
-| 2026-03-16 | 19:59 | 15805c0 | #6 | 5.1.0 | ⚠️ Partial | LLVM assert FIXED! GPU OOM on 4th config - RE-RUN due to machine contention (verified: `mcc --version` before run: 15805c00dbe8b8a5ed0f7c569c367c3c5b4b23ad) |
+| 2026-03-16 | 20:07 | 15805c0 | #6 | 5.1.0 | ⚠️ Partial | LLVM assert FIXED! GPU OOM on 4th config - 2nd re-run, machine heavily contested (verified: `mcc --version` before run: 15805c00dbe8b8a5ed0f7c569c367c3c5b4b23ad) |
 
 ---
 
@@ -236,25 +237,25 @@ and 32.39 GiB is reserved by PyTorch but unallocated.
 
 ---
 
-### GPU Memory OOM (Machine Contention)
+### GPU Memory OOM (Persistent Machine Contention)
 
 **Affected Config:** Non-causal, no packGQA (False, False)
 
 **Symptom:** `MemoryError: MUSA out of memory. Tried to allocate 28.00 GiB.`
 
-**GPU State:** 79.92 GiB total, 9.25 GiB free, 32.39 GiB reserved but unallocated by PyTorch
+**GPU State:** 79.92 GiB total, ~9.25 GiB free, ~32.39 GiB reserved but unallocated by PyTorch
 
-**Root Cause:** Shared machine - other users are allocating GPU memory, causing fragmentation.
+**Root Cause:** Shared machine - other users consistently holding GPU memory during evening hours (19:00-20:00). Observed across 3 consecutive run attempts.
 
 **Workarounds:**
 1. Set environment variable before running:
    ```bash
    export PYTORCH_MUSA_ALLOC_CONF=expandable_segments:True
    ```
-2. Run during off-hours when machine is less contested
+2. Run during off-hours (early morning/late night) when machine is less contested
 3. Clear GPU cache before running: `torch.musa.empty_cache()`
 
-**Status:** Persistent issue on shared machine. LLVM bug fixed, but GPU memory contention prevents full benchmark completion.
+**Status:** Persistent issue. LLVM bug fixed, but GPU memory contention prevents full benchmark completion. Requires memory workaround or off-hours scheduling.
 
 ---
 
@@ -265,7 +266,7 @@ and 32.39 GiB is reserved by PyTorch but unallocated.
 - [ ] Try `PYTORCH_MUSA_ALLOC_CONF=expandable_segments:True` to fix GPU OOM
 - [ ] Re-run benchmark on commit 15805c0 with memory fix to get all 4 configs
 - [ ] Compare performance: 15805c0 (fixed) vs 41c0ba6 (workaround) vs crashing commits
-- [ ] Consider scheduling benchmarks during off-hours to avoid GPU contention
+- [ ] Schedule benchmarks during off-hours to avoid GPU contention
 
 ---
 

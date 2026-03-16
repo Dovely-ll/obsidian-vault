@@ -108,11 +108,13 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 ## MCC Version History
 
+**Verification:** Each entry below was verified by running `mcc --version` immediately before/after the benchmark run.
+
 | Date | Time | MTCC Commit | Run # | MCC Version | Status | Notes |
 |------|------|-------------|-------|-------------|--------|-------|
-| 2026-03-16 | 16:51 | 3c5851dee | #1 | 5.1.0 | ❌ Crash | LLVM assert in RegisterPressure.cpp |
-| 2026-03-16 | 17:27 | 41c0ba6 | #2 | 5.1.0 | ✅ Pass | Cache clean workaround works; 4 configs tested |
-| 2026-03-16 | 18:02 | 41c0ba6 | #3 | 5.1.0 | ✅ Pass | Reproduced Run #2; results stable (±0.03 GB/s, ±0.06 TFLOPS) |
+| 2026-03-16 | 16:51 | 3c5851dee | #1 | 5.1.0 | ❌ Crash | LLVM assert in RegisterPressure.cpp (verified: `mcc --version` before run) |
+| 2026-03-16 | 17:27 | 41c0ba6 | #2 | 5.1.0 | ✅ Pass | Cache clean workaround works; 4 configs tested (verified: `mcc --version` after run) |
+| 2026-03-16 | 18:02 | 41c0ba6 | #3 | 5.1.0 | ✅ Pass | Reproduced Run #2; results stable (±0.03 GB/s, ±0.06 TFLOPS) (verified: `mcc --version` after run: 41c0ba6bf76dfc34c4b10621705aa3293a5a1e5d) |
 
 ---
 

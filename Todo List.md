@@ -10,6 +10,7 @@ ing:
 - __no_signed_zeros__
 - LMA atomic不支持fp
 - post encoder isa update
+- Complement FOP default register setting
 - SW-73146 devTech: mutlass launch kernel编译报错error in backend: Cannot select: 0x55e957fd50d0
     - LSU PREFETCH问题 → 待确认
     - 性能数据

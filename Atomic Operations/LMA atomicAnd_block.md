@@ -1,8 +1,8 @@
-# 现象
+## 现象
 线程数 > 操作数位宽 -> hang
 
-# Debug Log
-## Inline ASM
+## Debug Log
+### Inline ASM
 ```
 [==========] Running 9 tests from 1 test suite.
 [----------] Global test environment set-up.
@@ -135,7 +135,7 @@ Expected: true
 
  7 FAILED TESTS
 ```
-## MUSA
+### MUSA
 ```
 [==========] Running 9 tests from 1 test suite.
 [----------] Global test environment set-up.
@@ -268,3 +268,5 @@ Expected: true
 
  7 FAILED TESTS
 ```
+### Conclusion
+QA returns extra threads before `__syncthreads()`

@@ -1,14 +1,14 @@
-# Things to check:
+## Things to check:
 	How is MatchTable generated? Accoring to what? Why?
 	How do parameters of CheckComplexPat originate?
 	How do AMD and NV deal with Atomic Load/Store?
 
-# Progress:
-## Instruction List
-### Atomic LD/ST
+## Progress:
+### Instruction List
+#### Atomic LD/ST
 `ISD::ATOMIC_LOAD`
 `ISD::ATOMIC_STORE`
-### AtomicRMW
+#### AtomicRMW
 `ISD::ATOMIC_SWAP`
 `ISD::ATOMIC_LOAD_ADD`
 `ISD::ATOMIC_LOAD_SUB`
@@ -22,11 +22,11 @@
 `ISD::ATOMIC_LOAD_UMIN`
 `ISD::ATOMIC_LOAD_FADD`
 ==`ISD::ATOMIC_LOAD_FSUB`==
-### AtomicCmpXchg
+#### AtomicCmpXchg
 `ISD::ATOMIC_CMP_SWAP`
 `ISD::ATOMIC_CMP_SWAP_WITH_SUCCESS`
-## Operand Type
-### MTGPU LMA Atomic Operations and Supported Types
+### Operand Type
+#### MTGPU LMA Atomic Operations and Supported Types
 
 |        | B8  | U16 | U32 | S32 | U64 | S64 | B128 |
 | ------ | :-: | :-: | :-: | :-: | :-: | :-: | :--: |
@@ -45,7 +45,7 @@
 | `CAS`  |     |  T  |  P  |  T  |  T  |  P  |  P   |
 
 
-## Operand Sequence
+### Operand Sequence
 
 |                                        | Instruction Def   | DAG                      | CheckComplexPat                                             |
 | -------------------------------------- | ----------------- | ------------------------ | ----------------------------------------------------------- |

@@ -5,25 +5,24 @@
 **Container:** mtcc-mate-perf  
 **Path:** /home/devuser/yangfan/perf/mate
 
----
-
-## Test Command
-
+**Test Command:**
 ```bash
 MATE_FORCE_JIT=1 TVM_FFI_MUSA_ARCH_LIST=3.1 python benchmarks/bench_flash_attn.py
 ```
+
+**Note:** Always verify commit with `mcc --version` before each benchmark run!
 
 ---
 
 ## Benchmark Results Summary
 
-| Date | MTCC Commit | Status | IsCausal | IsLocal | IsPackGQA | BatchSize | TotalSeqlenQ | HeadQ | HeadKV | HeadDim | Bandwidth (GB/s) | Compute (TFLOPS) | Notes |
-|------|-------------|--------|----------|---------|-----------|-----------|--------------|-------|--------|---------|------------------|------------------|-------|
-| 2026-03-16 | 3c5851dee | ❌ Crash | - | - | - | - | - | - | - | - | - | - | LLVM assert failure |
-| 2026-03-16 | 3c5851dee | ✅ Pass | True | False | True | 56 | 229376 | 64 | 4 | 128 | 138.86 | 273.69 | After cache clean |
-| 2026-03-16 | 3c5851dee | ✅ Pass | False | False | True | 56 | 229376 | 64 | 4 | 128 | 80.14 | 306.71 | After cache clean |
-| 2026-03-16 | 3c5851dee | ✅ Pass | True | False | False | 56 | 229376 | 64 | 4 | 128 | 98.72 | 194.58 | After cache clean |
-| 2026-03-16 | 3c5851dee | ✅ Pass | False | False | False | 56 | 229376 | 64 | 4 | 128 | 82.02 | 313.89 | After cache clean |
+| Date | MTCC Commit | Status | IsCausal | IsPackGQA | BatchSize | TotalSeqlenQ | HeadQ | HeadKV | Bandwidth (GB/s) | Compute (TFLOPS) | Notes |
+|------|-------------|--------|----------|-----------|-----------|--------------|-------|--------|------------------|------------------|-------|
+| 2026-03-16 | 3c5851dee | ❌ Crash | - | - | - | - | - | - | - | - | LLVM assert failure |
+| 2026-03-16 | 41c0ba6 | ✅ Pass | True | True | 56 | 229376 | 64 | 4 | 138.86 | 273.69 | After cache clean |
+| 2026-03-16 | 41c0ba6 | ✅ Pass | False | True | 56 | 229376 | 64 | 4 | 80.14 | 306.71 | After cache clean |
+| 2026-03-16 | 41c0ba6 | ✅ Pass | True | False | 56 | 229376 | 64 | 4 | 98.72 | 194.58 | After cache clean |
+| 2026-03-16 | 41c0ba6 | ✅ Pass | False | False | 56 | 229376 | 64 | 4 | 82.02 | 313.89 | After cache clean |
 
 ---
 
@@ -53,7 +52,7 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 ### Run #2 - 2026-03-16 17:27 (After Cache Clean)
 
-**MTCC Commit:** `3c5851dee34cdf5523f556bab5dc7986278eb0bd`  
+**MTCC Commit:** `41c0ba6bf76dfc34c4b10621705aa3293a5a1e5d`  
 **MCC Version:** 5.1.0  
 **Status:** ✅ **SUCCESS** (after `rm -rf ~/.cache/tvm-ffi`)
 
@@ -73,7 +72,7 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 **Key Findings:**
 - **Best Compute:** 313.89 TFLOPS (non-causal, no packGQA)
 - **Best Bandwidth:** 138.86 GB/s (causal, packGQA)
-- Cache clean workaround resolved the JIT crash
+- Cache clean workaround resolved the JIT crash from commit 3c5851dee
 
 ---
 
@@ -81,13 +80,16 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 | Date | MTCC Commit | MCC Version | Status | Notes |
 |------|-------------|-------------|--------|-------|
-| 2026-03-16 | 3c5851dee | 5.1.0 | ⚠️ Bug + Fixed | LLVM assert bug; cache clean workaround works |
+| 2026-03-16 | 3c5851dee | 5.1.0 | ❌ Crash | LLVM assert in RegisterPressure.cpp |
+| 2026-03-16 | 41c0ba6 | 5.1.0 | ✅ Pass | Cache clean workaround works |
 
 ---
 
 ## Known Issues
 
 ### LLVM Register Pressure Tracker Crash
+
+**Affected Commit:** `3c5851dee34cdf5523f556bab5dc7986278eb0bd` (and possibly nearby commits)
 
 **Symptom:** `Assertion '(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/underflow"' failed`
 
@@ -101,16 +103,16 @@ rm -rf ~/.cache/tvm-ffi
 MATE_FORCE_JIT=1 TVM_FFI_MUSA_ARCH_LIST=3.1 python benchmarks/bench_flash_attn.py
 ```
 
-**Status:** Workaround confirmed working (2026-03-16)
+**Status:** Workaround confirmed working on commit 41c0ba6 (2026-03-16)
 
 ---
 
 ## Next Steps
 
-- [ ] Report LLVM assert bug to MTCC team
-- [ ] Monitor future MTCC commits for fix
+- [ ] Report LLVM assert bug to MTCC team (commit 3c5851dee)
 - [ ] Continue benchmarking on new commits
-- [ ] Compare performance across commits once bug is fixed
+- [ ] Compare performance across commits
+- [ ] Track when the crash is fixed in MTCC
 
 ---
 

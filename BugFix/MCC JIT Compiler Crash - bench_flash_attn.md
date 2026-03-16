@@ -29,6 +29,10 @@ MATE_FORCE_JIT=1 TVM_FFI_MUSA_ARCH_LIST=3.1 python benchmarks/bench_flash_attn.p
 | 2026-03-16 | 18:02 | 41c0ba6 | #3 | ✅ Pass | False | False | 56 | 229376 | 64 | 4 | 82.03 | 313.93 | Reproduce run |
 | 2026-03-16 | 19:18 | d159785 | #4 | ❌ Crash | - | - | - | - | - | - | - | - | LLVM assert failure (bug NOT fixed) |
 | 2026-03-16 | 19:34 | 8cac808 | #5 | ❌ Crash | - | - | - | - | - | - | - | - | LLVM assert failure (bug NOT fixed) |
+| 2026-03-16 | 19:49 | 15805c0 | #6 | ⚠️ Partial | True | True | 56 | 229376 | 64 | 4 | 138.69 | 273.35 | GPU OOM on 4th config |
+| 2026-03-16 | 19:49 | 15805c0 | #6 | ⚠️ Partial | False | True | 56 | 229376 | 64 | 4 | 79.95 | 305.98 | GPU OOM on 4th config |
+| 2026-03-16 | 19:49 | 15805c0 | #6 | ⚠️ Partial | True | False | 56 | 229376 | 64 | 4 | 98.40 | 193.95 | GPU OOM on 4th config |
+| 2026-03-16 | 19:49 | 15805c0 | #6 | ❌ OOM | False | False | 56 | 229376 | 64 | 4 | - | - | MUSA OOM 28GB |
 
 ---
 
@@ -154,6 +158,42 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 ---
 
+### Run #6 - 2026-03-16 19:49 (LLVM Fix + GPU OOM)
+
+**MTCC Commit:** `15805c00dbe8b8a5ed0f7c569c367c3c5b4b23ad`  
+**MCC Version:** 5.1.0  
+**Status:** ⚠️ **PARTIAL** (LLVM assert FIXED, but GPU OOM on 4th config)
+
+**Verification:** `mcc --version` before run:
+```
+clang version 14.0.0 (git@sh-code.mthreads.com:sw/mtcc.git 15805c00dbe8b8a5ed0f7c569c367c3c5b4b23ad)
+mcc version 5.1.0
+```
+
+**Results (3 of 4 configs passed):**
+
+| IsCausal | IsLocal | IsPackGQA | Bandwidth (GB/s) | Compute (TFLOPS) |
+|----------|---------|-----------|------------------|------------------|
+| True | False | True | 138.69 | 273.35 |
+| False | False | True | 79.95 | 305.98 |
+| True | False | False | 98.40 | 193.95 |
+| False | False | False | ❌ OOM | ❌ OOM |
+
+**GPU OOM Error (4th config - non-causal, no packGQA):**
+```
+MemoryError: MUSA out of memory. Tried to allocate 28.00 GiB.
+GPU 0 has a total capacity of 79.92 GiB of which 9.25 GiB is free.
+Of the allocated memory 13.18 GiB is allocated by PyTorch,
+and 32.39 GiB is reserved by PyTorch but unallocated.
+```
+
+**Analysis:** 
+- ✅ **LLVM assert bug is FIXED** in commit 15805c0! No more RegisterPressure.cpp crash.
+- ❌ **GPU OOM** on the 4th configuration (non-causal, no packGQA) - needs memory management fix.
+- Suggestion: Set `PYTORCH_MUSA_ALLOC_CONF=expandable_segments:True` to avoid fragmentation.
+
+---
+
 ## MCC Version History
 
 **Verification:** Each entry below was verified by running `mcc --version` immediately before/after the benchmark run.
@@ -165,19 +205,23 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 | 2026-03-16 | 18:02 | 41c0ba6 | #3 | 5.1.0 | ✅ Pass | Reproduced Run #2; results stable (±0.03 GB/s, ±0.06 TFLOPS) (verified: `mcc --version` after run: 41c0ba6bf76dfc34c4b10621705aa3293a5a1e5d) |
 | 2026-03-16 | 19:18 | d159785 | #4 | 5.1.0 | ❌ Crash | Same LLVM assert as Run #1; bug NOT fixed (verified: `mcc --version` before run: d159785fb2f691717cc3509d29e68e00ab56779c) |
 | 2026-03-16 | 19:34 | 8cac808 | #5 | 5.1.0 | ❌ Crash | Same LLVM assert persists; bug NOT fixed (verified: `mcc --version` before run: 8cac80813177db9264359ceb7a480de743e0379b) |
+| 2026-03-16 | 19:49 | 15805c0 | #6 | 5.1.0 | ⚠️ Partial | LLVM assert FIXED! GPU OOM on 4th config (verified: `mcc --version` before run: 15805c00dbe8b8a5ed0f7c569c367c3c5b4b23ad) |
 
 ---
 
 ## Known Issues
 
-### LLVM Register Pressure Tracker Crash
+### LLVM Register Pressure Tracker Crash ✅ FIXED
 
-**Affected Commits:** 
+**Affected Commits (RESOLVED):** 
 - `3c5851dee34cdf5523f556bab5dc7986278eb0bd` ❌
 - `d159785fb2f691717cc3509d29e68e00ab56779c` ❌
 - `8cac80813177db9264359ceb7a480de743e0379b` ❌
 
-**Working Commits:**
+**Fixed In:**
+- `15805c00dbe8b8a5ed0f7c569c367c3c5b4b23ad` ✅ (commit 15805c0)
+
+**Working Commits (pre-fix):**
 - `41c0ba6bf76dfc34c4b10621705aa3293a5a1e5d` ✅ (with cache clean workaround)
 
 **Symptom:** `Assertion '(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/underflow"' failed`
@@ -186,23 +230,35 @@ Assertion `(PDiffI->getUnitInc() >= 0) == (PNew >= POld) && "PSet overflow/under
 
 **Trigger:** JIT compilation of flash attention metadata kernel
 
-**Workaround:** Clear TVM-FFI cache before running (only works on commit 41c0ba6):
+**Status:** **FIXED in commit 15805c0!** ✅
+
+---
+
+### GPU Memory OOM (New Issue)
+
+**Affected Config:** Non-causal, no packGQA (False, False)
+
+**Symptom:** `MemoryError: MUSA out of memory. Tried to allocate 28.00 GiB.`
+
+**GPU State:** 79.92 GiB total, 9.25 GiB free, 32.39 GiB reserved but unallocated by PyTorch
+
+**Workaround:** Set environment variable before running:
 ```bash
-rm -rf ~/.cache/tvm-ffi
-MATE_FORCE_JIT=1 TVM_FFI_MUSA_ARCH_LIST=3.1 python benchmarks/bench_flash_attn.py
+export PYTORCH_MUSA_ALLOC_CONF=expandable_segments:True
 ```
 
-**Status:** Bug persists across multiple commits (3 crashing, 1 working). Commit 41c0ba6 is the ONLY working commit found so far. Cache clean workaround is commit-specific, not a general fix.
+**Status:** New issue discovered in commit 15805c0. LLVM bug fixed, but memory fragmentation causes OOM.
 
 ---
 
 ## Next Steps
 
-- [ ] Report LLVM assert bug to MTCC team (commits 3c5851dee, d159785, 8cac808)
-- [ ] Ask MTCC team about commit 41c0ba6 - why does it work? What's special about it?
-- [ ] Continue benchmarking on new commits to find when bug is fixed
-- [ ] Track commit range where 41c0ba6 exists (may help identify the fix)
+- [x] ~~Report LLVM assert bug to MTCC team~~ **FIXED in 15805c0!**
+- [x] ~~Ask MTCC team about commit 41c0ba6~~ No longer needed - 15805c0 has proper fix
+- [ ] Try `PYTORCH_MUSA_ALLOC_CONF=expandable_segments:True` to fix GPU OOM
+- [ ] Re-run benchmark on commit 15805c0 with memory fix to get all 4 configs
+- [ ] Compare performance: 15805c0 (fixed) vs 41c0ba6 (workaround) vs crashing commits
 
 ---
 
-**Tags:** #benchmark #flash-attn #mcc #jit #compiler-bug #performance #mtcc
+**Tags:** #benchmark #flash-attn #mcc #jit #compiler-bug #performance #mtcc #gpu-oom
